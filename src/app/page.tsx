@@ -1,10 +1,14 @@
 import Link from "next/link";
 import Nav from "@/components/Nav";
+import ScrollAnimations from "@/components/ScrollAnimations";
+import OceanBox from "@/components/OceanBox";
 
 export default function Home() {
   return (
     <>
       <Nav />
+      <ScrollAnimations />
+      <OceanBox />
 
       {/* ============ HERO ============ */}
       <header className="hero">
