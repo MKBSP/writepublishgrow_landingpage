@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 export default function SignupPage() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -11,6 +13,10 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [redirected, setRedirected] = useState(false);
   const [needsConfirm, setNeedsConfirm] = useState(false);
+
+  const redirectMode = searchParams?.get('redirect_mode') || '';
+  const port = searchParams?.get('port') || '3000';
+  const queryString = searchParams?.toString() ? `?${searchParams.toString()}` : '';
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,12 +38,11 @@ export default function SignupPage() {
         setError(authError.message);
         return;
       }
-      // If email confirmation required, Supabase returns user but no session
       if (!data.session) {
         setNeedsConfirm(true);
         return;
       }
-      redirect(data.session.access_token, data.session.refresh_token, data.user?.email ?? email);
+      doRedirect(data.session.access_token, data.session.refresh_token, data.user?.email ?? email);
     } catch {
       setError('Network error. Please try again.');
     } finally {
@@ -45,18 +50,14 @@ export default function SignupPage() {
     }
   }
 
-  function redirect(accessToken: string, refreshToken: string, userEmail: string) {
+  function doRedirect(accessToken: string, refreshToken: string, userEmail: string) {
     const params = new URLSearchParams({
       access_token: accessToken,
       refresh_token: refreshToken,
       email: userEmail,
     });
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const redirectMode = urlParams.get('redirect_mode');
-
     if (redirectMode === 'localhost') {
-      const port = urlParams.get('port') || '3000';
       window.location.href = `http://localhost:${port}/api/auth/callback?${params}`;
     } else {
       window.location.href = `wpg://auth-callback?${params}`;
@@ -72,7 +73,7 @@ export default function SignupPage() {
           <p style={{ ...styles.text, marginTop: 12 }}>
             We sent a confirmation link to <strong>{email}</strong>. Click it, then come back here to log in.
           </p>
-          <a href={`/login${window.location.search}`} style={{ ...styles.btn, display: 'block', textAlign: 'center', textDecoration: 'none', marginTop: 20 }}>
+          <a href={`/login${queryString}`} style={{ ...styles.btn, display: 'block', textAlign: 'center', textDecoration: 'none', marginTop: 20 }}>
             Go to login
           </a>
         </div>
@@ -86,7 +87,7 @@ export default function SignupPage() {
         <div style={styles.card}>
           <h2 style={styles.heading}>Opening WritePublishGrow...</h2>
           <p style={styles.text}>
-            If the app didn't open, <a href="wpg://auth-callback" style={styles.link}>click here</a> or copy the link manually.
+            If the app didn&apos;t open, <a href="wpg://auth-callback" style={styles.link}>click here</a> or copy the link manually.
           </p>
         </div>
       </div>
@@ -151,7 +152,7 @@ export default function SignupPage() {
         </form>
 
         <p style={{ ...styles.text, textAlign: 'center', marginTop: 16 }}>
-          Already have an account? <a href={`/login${window.location.search}`} style={styles.link}>Log in</a>
+          Already have an account? <a href={`/login${queryString}`} style={styles.link}>Log in</a>
         </p>
       </div>
     </div>

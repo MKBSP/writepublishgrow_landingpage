@@ -1,14 +1,20 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [redirected, setRedirected] = useState(false);
+
+  const redirectMode = searchParams?.get('redirect_mode') || '';
+  const port = searchParams?.get('port') || '3000';
+  const queryString = searchParams?.toString() ? `?${searchParams.toString()}` : '';
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -24,7 +30,7 @@ export default function LoginPage() {
         setError('Login failed — no session returned.');
         return;
       }
-      redirect(data.session.access_token, data.session.refresh_token, data.user?.email ?? email);
+      doRedirect(data.session.access_token, data.session.refresh_token, data.user?.email ?? email);
     } catch {
       setError('Network error. Please try again.');
     } finally {
@@ -32,23 +38,16 @@ export default function LoginPage() {
     }
   }
 
-  function redirect(accessToken: string, refreshToken: string, userEmail: string) {
+  function doRedirect(accessToken: string, refreshToken: string, userEmail: string) {
     const params = new URLSearchParams({
       access_token: accessToken,
       refresh_token: refreshToken,
       email: userEmail,
     });
 
-    // Check if we should redirect to localhost (dev mode) or wpg:// protocol
-    const urlParams = new URLSearchParams(window.location.search);
-    const redirectMode = urlParams.get('redirect_mode');
-
     if (redirectMode === 'localhost') {
-      // Dev mode: redirect to the desktop app's localhost callback
-      const port = urlParams.get('port') || '3000';
       window.location.href = `http://localhost:${port}/api/auth/callback?${params}`;
     } else {
-      // Production: use wpg:// deep link
       window.location.href = `wpg://auth-callback?${params}`;
     }
     setRedirected(true);
@@ -60,7 +59,7 @@ export default function LoginPage() {
         <div style={styles.card}>
           <h2 style={styles.heading}>Opening WritePublishGrow...</h2>
           <p style={styles.text}>
-            If the app didn't open, <a href={`wpg://auth-callback`} style={styles.link}>click here</a> or copy the link manually.
+            If the app didn&apos;t open, <a href="wpg://auth-callback" style={styles.link}>click here</a> or copy the link manually.
           </p>
         </div>
       </div>
@@ -112,7 +111,7 @@ export default function LoginPage() {
         </form>
 
         <p style={{ ...styles.text, textAlign: 'center', marginTop: 16 }}>
-          Don't have an account? <a href={`/signup${window.location.search}`} style={styles.link}>Sign up</a>
+          Don&apos;t have an account? <a href={`/signup${queryString}`} style={styles.link}>Sign up</a>
         </p>
       </div>
     </div>
